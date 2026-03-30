@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:logging/logging.dart';
 
 void main() {
+  Logger.root.level = Level.ALL;
+  Logger.root.onRecord.listen((record) {
+    debugPrint('[${record.level.name}] ${record.time}: ${record.message}');
+  });
   runApp(const DevStackApp());
 }
 
@@ -13,7 +18,8 @@ class DevStackApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF0B1215), // Fundo bem escuro
+        scaffoldBackgroundColor: const Color(0xFF0B1215),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
       home: const FeedScreen(),
     );
@@ -23,8 +29,8 @@ class DevStackApp extends StatelessWidget {
 class FeedScreen extends StatelessWidget {
   const FeedScreen({super.key});
 
-  final Color primaryCyan = const Color(0xFF4EE2EC); // Ciano neon
-  final Color cardColor = const Color(0xFF162126); // Cinza azulado escuro
+  final Color primaryCyan = const Color(0xFF4EE2EC);
+  final Color cardColor = const Color(0xFF162126);
 
   @override
   Widget build(BuildContext context) {
@@ -55,21 +61,23 @@ class FeedScreen extends StatelessWidget {
                       _buildPostCard(),
                       _buildSimplePostCard("AI integration for prediction modeling in Python"),
                       _buildSimplePostCard("Deploying Docker containers to AWS Lambda"),
-                      const SizedBox(height: 80), // Espaço para o botão flutuante
+                      const SizedBox(height: 80),
                     ],
                   ),
                 ),
               ],
             ),
-            _buildFloatingAskButton(),
+            Positioned(
+              bottom: 20,
+              right: 20,
+              child: _buildFloatingAskButton(),
+            ),
           ],
         ),
       ),
       bottomNavigationBar: _buildBottomNav(),
     );
   }
-
-  // --- WIDGETS AUXILIARES ---
 
   Widget _buildHeader() {
     return Padding(
@@ -106,7 +114,7 @@ class FeedScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(width: 15),
-              const CircleAvatar(
+               CircleAvatar(
                 radius: 18,
                 backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=tech'),
                 backgroundColor: Colors.cyan,
@@ -161,7 +169,7 @@ class FeedScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              const CircleAvatar(radius: 12, backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=1')),
+              CircleAvatar(radius: 12, backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=1')),
               const SizedBox(width: 8),
               const Text('@TechEnthusiast', style: TextStyle(fontSize: 12, color: Colors.grey)),
               const Spacer(),
@@ -175,7 +183,7 @@ class FeedScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Learn about optimizing dynamic content loading from the miners in React hooks.',
+            'Learn about optimizing dynamic content loading in React hooks.',
             style: TextStyle(color: Colors.grey, fontSize: 12),
           ),
           const SizedBox(height: 12),
@@ -275,9 +283,11 @@ class FeedScreen extends StatelessWidget {
   }
 
   Widget _buildFloatingAskButton() {
-    return Positioned(
-      bottom: 20,
-      right: 20,
+    final Logger logger = Logger('FeedScreen');
+    return GestureDetector(
+      onTap: () {
+        logger.info('Botão Ask AI clicado!');
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
