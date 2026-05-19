@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -56,6 +57,51 @@ class _FeedScreenState extends State<FeedScreen> {
   final Color primaryCyan = const Color(0xFF4EE2EC); // Ciano neon
   final Color cardColor = const Color(0xFF162126); // Cinza azulado escuro
   final List<String> tags = ['Python', 'React', 'AI', 'JavaScript'];
+
+  // Profile Controllers
+  late TextEditingController _profileNameController;
+  late TextEditingController _profileEmailController;
+  late TextEditingController _profilePhoneController;
+  late TextEditingController _profileCepController;
+  late TextEditingController _profileRuaController;
+  late TextEditingController _profileBairroController;
+  late TextEditingController _profileCidadeController;
+  late TextEditingController _profileEstadoController;
+  late TextEditingController _profileNumeroController;
+  late TextEditingController _profileComplementoController;
+  bool _cepLoading = false;
+  String? _cepError;
+  bool _profileEditing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _profileNameController = TextEditingController();
+    _profileEmailController = TextEditingController();
+    _profilePhoneController = TextEditingController();
+    _profileCepController = TextEditingController();
+    _profileRuaController = TextEditingController();
+    _profileBairroController = TextEditingController();
+    _profileCidadeController = TextEditingController();
+    _profileEstadoController = TextEditingController();
+    _profileNumeroController = TextEditingController();
+    _profileComplementoController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _profileNameController.dispose();
+    _profileEmailController.dispose();
+    _profilePhoneController.dispose();
+    _profileCepController.dispose();
+    _profileRuaController.dispose();
+    _profileBairroController.dispose();
+    _profileCidadeController.dispose();
+    _profileEstadoController.dispose();
+    _profileNumeroController.dispose();
+    _profileComplementoController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -201,25 +247,227 @@ class _FeedScreenState extends State<FeedScreen> {
 
   // NOVO: Conteúdo da aba PROFILE
   Widget _buildProfileContent() {
-    return Center(
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 50,
-            backgroundColor: primaryCyan.withValues(alpha: 0.3),
-            child: Icon(Icons.person, size: 50, color: primaryCyan),
+          // Header do Perfil
+          Center(
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 50,
+                  backgroundColor: primaryCyan.withValues(alpha: 0.3),
+                  child: Icon(Icons.person, size: 50, color: primaryCyan),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Seu Perfil',
+                  style: GoogleFonts.poppins(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Gerencie suas informações pessoais',
+                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Botão Edit/Save
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryCyan,
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () {
+                  setState(() {
+                    _profileEditing = !_profileEditing;
+                  });
+                },
+                icon: Icon(_profileEditing ? Icons.check : Icons.edit),
+                label: Text(_profileEditing ? 'Salvar' : 'Editar'),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Seu Perfil',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Gerencie suas informações',
-            style: TextStyle(color: Colors.grey),
-          ),
+          // Seção Dados Pessoais
+          _buildProfileSection('Dados Pessoais', [
+            _buildProfileTextField(
+              'Nome Completo',
+              _profileNameController,
+              Icons.person,
+              enabled: _profileEditing,
+            ),
+            _buildProfileTextField(
+              'Email',
+              _profileEmailController,
+              Icons.email,
+              enabled: _profileEditing,
+            ),
+            _buildProfileTextField(
+              'Telefone',
+              _profilePhoneController,
+              Icons.phone,
+              enabled: _profileEditing,
+            ),
+          ]),
+          const SizedBox(height: 24),
+          // Seção CEP (Obrigatória)
+          _buildProfileSection('Endereço', [
+            // Campo CEP com botão de consulta
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      '📍 CEP *',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _profileCepController,
+                        enabled: _profileEditing,
+                        maxLength: 8,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: '00000000',
+                          hintStyle: TextStyle(color: Colors.grey.withValues(alpha: 0.5)),
+                          filled: true,
+                          fillColor: const Color(0xFF0F171A),
+                          prefixIcon: const Icon(Icons.location_on, color: Colors.orange),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: primaryCyan.withValues(alpha: 0.3)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: primaryCyan),
+                          ),
+                          counterText: '',
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            _cepError = null;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    if (_profileEditing)
+                      GestureDetector(
+                        onTap: _profileCepController.text.length == 8
+                            ? _consultarCEP
+                            : null,
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: _profileCepController.text.length == 8
+                                ? primaryCyan
+                                : Colors.grey.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: _cepLoading
+                              ? SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      _profileCepController.text.length == 8
+                                          ? Colors.black
+                                          : Colors.grey,
+                                    ),
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.search,
+                                  color: _profileCepController.text.length == 8
+                                      ? Colors.black
+                                      : Colors.grey,
+                                ),
+                        ),
+                      ),
+                  ],
+                ),
+                if (_cepError != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      _cepError!,
+                      style: const TextStyle(color: Colors.red, fontSize: 12),
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                Text(
+                  '* Campo obrigatório - Consulte seu CEP para autopreenchimento de endereço',
+                  style: TextStyle(
+                    color: Colors.orange.withValues(alpha: 0.7),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+            _buildProfileTextField(
+              'Rua',
+              _profileRuaController,
+              Icons.streetview,
+              enabled: _profileEditing,
+            ),
+            _buildProfileTextField(
+              'Número',
+              _profileNumeroController,
+              Icons.home,
+              enabled: _profileEditing,
+            ),
+            _buildProfileTextField(
+              'Complemento',
+              _profileComplementoController,
+              Icons.info_outline,
+              enabled: _profileEditing,
+            ),
+            _buildProfileTextField(
+              'Bairro',
+              _profileBairroController,
+              Icons.location_city,
+              enabled: _profileEditing,
+            ),
+            _buildProfileTextField(
+              'Cidade',
+              _profileCidadeController,
+              Icons.business,
+              enabled: _profileEditing,
+            ),
+            _buildProfileTextField(
+              'Estado',
+              _profileEstadoController,
+              Icons.map,
+              enabled: _profileEditing,
+            ),
+          ]),
+          const SizedBox(height: 32),
         ],
       ),
     );
@@ -796,6 +1044,151 @@ class _FeedScreenState extends State<FeedScreen> {
         _isLoadingAI = false;
       });
     }
+  }
+
+  // Método para consultar CEP
+  Future<void> _consultarCEP() async {
+    final cep = _profileCepController.text.replaceAll(RegExp(r'\D'), '');
+
+    if (cep.isEmpty || cep.length != 8) {
+      setState(() {
+        _cepError = 'CEP inválido. Use apenas 8 dígitos.';
+      });
+      return;
+    }
+
+    setState(() {
+      _cepLoading = true;
+      _cepError = null;
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse('https://viacep.com.br/ws/$cep/json/'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data['erro'] == true) {
+          setState(() {
+            _cepError = '❌ CEP não encontrado';
+            _cepLoading = false;
+          });
+        } else {
+          setState(() {
+            _profileRuaController.text = data['logradouro'] ?? '';
+            _profileBairroController.text = data['bairro'] ?? '';
+            _profileCidadeController.text = data['localidade'] ?? '';
+            _profileEstadoController.text = data['uf'] ?? '';
+            _cepLoading = false;
+            _cepError = null;
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('✅ CEP consultado com sucesso!'),
+                backgroundColor: Colors.green,
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          });
+        }
+      } else {
+        setState(() {
+          _cepError = '❌ Erro ao consultar CEP';
+          _cepLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _cepError = '❌ Erro na conexão: ${e.toString()}';
+        _cepLoading = false;
+      });
+    }
+  }
+
+  // Widget para seção de perfil
+  Widget _buildProfileSection(String title, List<Widget> children) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            color: primaryCyan,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white10),
+          ),
+          child: Column(
+            children: [
+              for (int i = 0; i < children.length; i++) ...[
+                children[i],
+                if (i < children.length - 1) const SizedBox(height: 12),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Widget para campo de texto do perfil
+  Widget _buildProfileTextField(
+    String label,
+    TextEditingController controller,
+    IconData icon, {
+    bool enabled = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          enabled: enabled,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintStyle: TextStyle(color: Colors.grey.withValues(alpha: 0.5)),
+            filled: true,
+            fillColor: const Color(0xFF0F171A),
+            prefixIcon: Icon(icon, color: primaryCyan),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: primaryCyan.withValues(alpha: 0.3)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: primaryCyan),
+            ),
+            disabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: Colors.grey.withValues(alpha: 0.2),
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildBottomNav() {
